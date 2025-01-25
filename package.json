@@ -1,35 +1,44 @@
 {
-    "name": "ber-tlv",
-    "version": "0.9.2",
+    "name": "@ikhokha/ber-tlv",
+    "version": "1.0.0",
     "description": "Simple TLV implementation, providing parsing and serialization of TLV encoded data",
     "author": "Simon Eumes <simon@sim0n.net>",
+    "contributors": [
+        {
+            "name": "iKhokha Team",
+            "url": "https://www.ikhokha.com"
+        }
+    ],
     "license": "MIT",
     "repository": {
         "type": "git",
         "url": "https://github.com/eumes/ber-tlv"
     },
-    "main": "./module/ber-tlv.js",
-    "typescript": {
-      "definition": "./module/ber-tlv.d.ts"
-    },
+    "main": "dist/BerTlv.js",
+	"types": "dist/BerTlv.d.ts",
+	"exports": "./dist/BerTlv.js",
+	"files": [
+		"dist/**/*"
+	],
+
     "scripts": {
-      "start": "gulp",
-      "build": "gulp build",
-      "test": "gulp test"
+      "build": "rm -rf ./dist && tsc -p tsconfig.json",
+      "typecheck": "tsc --noEmit",
+      "test": "mocha src/**/*-Specs.ts"
     },
     "keywords": [
         "tlv", "ber-tlv", "emv", "typescript"
     ],
     "devDependencies": {
-      "chai": "^2.1.1",
-      "del": "^1.2.0",
-      "gulp": "^3.9.0",
-      "gulp-mocha": "^2.0.0",
-      "gulp-typescript": "^2.8.0",
-      "merge2": "^0.3.6",
-      "mocha": "^2.2.1"
+      "@types/chai": "^5.0.1",
+      "@types/mocha": "^10.0.10",
+      "chai": "^5.1.2",
+      "mocha": "^11.1.0",
+      "tsx": "^4.19.2",
+      "typescript": "^5.7.3"
     },
     "dependencies": {
-        "octet-buffer": "^0.9.0"
+         "@types/node": "^18.0.x",
+        "@ikhokha/octet-buffer": "^1.0.0"
     }
 }
