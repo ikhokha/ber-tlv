@@ -1,6 +1,6 @@
-import { ITlv, TlvType, TlvClass, TlvHelper } from './Tlv';
+import { ITlv, TlvType } from './Tlv';
 
-import { OctetBuffer } from 'octet-buffer';
+import { OctetBuffer } from '@ikhokha/octet-buffer';
 
 class TlvSerializerSerializeError implements Error {
     constructor(public name: string, public message: string) {}
@@ -19,18 +19,18 @@ const SERIALIZE_UINT32_MAX: number = 0xFFFFFFFF;
 export class TlvSerializer {
 
     static serializeItems(items: ITlv[]): Buffer {
-        var serializedItems: Buffer[] = [];
-        for (var item of items){
-            var itemBuffer: Buffer = TlvSerializer.serializeItem(item);
+        const serializedItems: Buffer[] = [];
+        for (const item of items){
+            const itemBuffer: Buffer = TlvSerializer.serializeItem(item);
             serializedItems.push(itemBuffer);
         }
 
-        var serializedBuffer = Buffer.concat(serializedItems);
+        const serializedBuffer = Buffer.concat(serializedItems);
         return serializedBuffer;
     }
 
     static serializeItem(item: ITlv): Buffer {
-        var serializedItem: Buffer;
+        let serializedItem: Buffer;
         if (item.type === TlvType.CONSTRUCTED){
             serializedItem = TlvSerializer.serializeConstrucedItem(item);
         } else {
@@ -41,30 +41,30 @@ export class TlvSerializer {
     }
 
     static serializeConstrucedItem(item: ITlv): Buffer {
-        var serializedItems: Buffer[] = [];
-        for (var subitem of item.items){
-            var itemBuffer: Buffer = TlvSerializer.serializeItem(subitem);
+        let serializedItems: Buffer[] = [];
+        for (const subitem of item.items ?? []){
+            const itemBuffer: Buffer = TlvSerializer.serializeItem(subitem);
             serializedItems.push(itemBuffer);
         }
-        var serializedItemsBuffer = Buffer.concat(serializedItems);
+        const serializedItemsBuffer = Buffer.concat(serializedItems);
 
-        var tagBuffer: Buffer = new Buffer(item.tag, 'hex');
-        var lengthBuffer: Buffer = this.lengthBufferForLengt(item.tag, serializedItemsBuffer.length);
+        const tagBuffer: Buffer = Buffer.from(item.tag, 'hex');
+        const lengthBuffer: Buffer = this.lengthBufferForLengt(item.tag, serializedItemsBuffer.length);
 
-        var serializedItem: Buffer = Buffer.concat([tagBuffer, lengthBuffer, serializedItemsBuffer]);
+        const serializedItem: Buffer = Buffer.concat([tagBuffer, lengthBuffer, serializedItemsBuffer]);
         return serializedItem;
     }
 
     static serializePrimitiveItem(item: ITlv): Buffer {
-        var tagBuffer: Buffer = new Buffer(item.tag, 'hex');
-        var lengthBuffer: Buffer = this.lengthBufferForLengt(item.tag, item.value.length);
+        const tagBuffer: Buffer = Buffer.from(item.tag, 'hex');
+        const lengthBuffer: Buffer = this.lengthBufferForLengt(item.tag, item.value?.length ?? 0);
 
-        var serializedItem: Buffer = Buffer.concat([tagBuffer, lengthBuffer, item.value]);
+        const serializedItem: Buffer = Buffer.concat([tagBuffer, lengthBuffer, item.value ?? Buffer.alloc(0)]);
         return serializedItem;
     }
 
     static lengthBufferForLengt(tag: string, length: number): Buffer{
-        var octetBuffer: OctetBuffer = new OctetBuffer(new Buffer(1));
+        const octetBuffer: OctetBuffer = new OctetBuffer(Buffer.alloc(1));
 
         if (length < TLV_SERIALIZE_MULTIBYTE_FLAG){
             octetBuffer.writeUInt8(length);

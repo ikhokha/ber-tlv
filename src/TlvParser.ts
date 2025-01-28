@@ -1,7 +1,7 @@
-import { ITlv, TlvType, TlvClass, TlvHelper } from './Tlv';
+import { ITlv, TlvType, TlvHelper } from './Tlv';
 import { TlvFactory } from './TlvFactory';
 
-import { OctetBuffer } from 'octet-buffer';
+import { OctetBuffer } from '@ikhokha/octet-buffer';
 
 class TlvParserParseError implements Error {
     constructor(public name: string, public message: string) {}
@@ -28,7 +28,12 @@ class TlvParserParseError implements Error {
 }
 
 export class TlvParserResult<T> {
-    constructor(public result: T, public error: Error) {}
+    public result: T
+    public error: Error | null
+    constructor(result: T | null, error: Error | null) {
+        this.result = result ?? Buffer.alloc(0) as unknown as T
+        this.error = error
+    }
 }
 
 const TLV_IGNORE_VALUE: number = 0x00;
@@ -40,15 +45,15 @@ const TLV_LENGTH_ADDITIONAL_BYTES_FLAG: number = 0x7F;
 export class TlvParser {
 
     static parseItems(buffer: Buffer): TlvParserResult<ITlv[]> {
-        var octetBuffer: OctetBuffer = new OctetBuffer(buffer);
-        var items: ITlv[] = [];
+        const octetBuffer: OctetBuffer = new OctetBuffer(buffer);
+        const items: ITlv[] = [];
 
         while(octetBuffer.remaining > 0){
             this.skipZeroBytes(octetBuffer);
             if(octetBuffer.remaining === 0){
                 continue;
             }
-            var parseResult: TlvParserResult<ITlv> = this.parseItem(octetBuffer);
+            const parseResult: TlvParserResult<ITlv> = this.parseItem(octetBuffer);
             if (parseResult.result !== null){
                 items.push(parseResult.result);
             }
@@ -61,7 +66,7 @@ export class TlvParser {
     }
 
     static skipZeroBytes(buffer: OctetBuffer): OctetBuffer {
-        var peeked: number;
+        let peeked: number;
         while(buffer.remaining > 0){
             peeked = buffer.peek();
             if (peeked !== TLV_IGNORE_VALUE){
@@ -76,33 +81,33 @@ export class TlvParser {
     static parseItem(buffer: OctetBuffer): TlvParserResult<ITlv> {
         //console.log('start parsing single items, remaining length: ' + buffer.remaining);
 
-        var tagParsingResult: TlvParserResult<Buffer> = this.parseTag(buffer);
+        const tagParsingResult: TlvParserResult<Buffer> = this.parseTag(buffer);
         if (tagParsingResult.error != null){
             return new TlvParserResult<ITlv>(null, tagParsingResult.error);
         }
 
-        var tagBuffer: Buffer = tagParsingResult.result;
-        var type: TlvType = TlvHelper.typeFromTag(tagBuffer);
+        const tagBuffer: Buffer = tagParsingResult.result;
+        const type: TlvType = TlvHelper.typeFromTag(tagBuffer);
         //console.log('got tag: ' + tagBuffer.toString('hex'));
 
-        var lengthParsingResult: TlvParserResult<number> = this.parseLength(buffer, tagBuffer);
+        const lengthParsingResult: TlvParserResult<number> = this.parseLength(buffer, tagBuffer);
         if (lengthParsingResult.error != null){
             return new TlvParserResult<ITlv>(null, lengthParsingResult.error);
         }
-        var length: number = lengthParsingResult.result;
+        const length: number = lengthParsingResult.result;
         //console.log('got length: ' + length);
 
-        var valueParsingResult: TlvParserResult<Buffer> = this.parseValue(buffer, length, tagBuffer);
-        var value: Buffer = valueParsingResult.result;
+        const valueParsingResult: TlvParserResult<Buffer> = this.parseValue(buffer, length, tagBuffer);
+        let value: Buffer | null = valueParsingResult.result;
         if (valueParsingResult.error != null){
             if (type === TlvType.CONSTRUCTED){
                 //for constructed items we do not have any subitems, so we ignore them for now
-                var tlvItem: ITlv = TlvFactory.constructedTlv(tagBuffer);
+                const tlvItem: ITlv = TlvFactory.constructedTlv(tagBuffer);
                 return new TlvParserResult<ITlv>(tlvItem, valueParsingResult.error);
             }
             else {
                 //lets just return the data we have parsed so far
-                var tlvItem: ITlv = TlvFactory.primitiveTlv(tagBuffer, value);
+                const tlvItem: ITlv = TlvFactory.primitiveTlv(tagBuffer, value);
                 return new TlvParserResult<ITlv>(tlvItem, valueParsingResult.error);
             }
         }
@@ -110,14 +115,14 @@ export class TlvParser {
 
         if (type === TlvType.CONSTRUCTED) {
             // console.log('detected constructed tag, now parsing payload');
-            var subParsingResult: TlvParserResult<ITlv[]> = this.parseItems(value);
-            var tlvItem: ITlv = TlvFactory.constructedTlv(tagBuffer, subParsingResult.result);
+            const subParsingResult: TlvParserResult<ITlv[]> = this.parseItems(value);
+            const tlvItem: ITlv = TlvFactory.constructedTlv(tagBuffer, subParsingResult.result);
             // console.log('returning with constructed tag');
             return new TlvParserResult<ITlv>(tlvItem, subParsingResult.error);
         }
         else {
             // console.log('returning with primitve tag');
-            var tlvItem: ITlv = TlvFactory.primitiveTlv(tagBuffer, value);
+            const tlvItem: ITlv = TlvFactory.primitiveTlv(tagBuffer, value);
             return new TlvParserResult<ITlv>(tlvItem, valueParsingResult.error);
         }
 
@@ -126,11 +131,11 @@ export class TlvParser {
 
     static parseTag(buffer: OctetBuffer): TlvParserResult<Buffer> {
         if (buffer.remaining === 0){
-            return new TlvParserResult<Buffer>(null, TlvParserParseError.errorInsufficientTagData(new Buffer(0)));
+            return new TlvParserResult<Buffer>(null, TlvParserParseError.errorInsufficientTagData(Buffer.alloc(0)));
         }
 
-        var tagBuffer: OctetBuffer = new OctetBuffer();
-        var tagByte: number = buffer.readUInt8();
+        const tagBuffer: OctetBuffer = new OctetBuffer();
+        let tagByte: number = buffer.readUInt8();
         tagBuffer.writeUInt8(tagByte);
         //console.log('first tag: ' + tagByte);
 
@@ -157,14 +162,14 @@ export class TlvParser {
             return new TlvParserResult<number>(null, TlvParserParseError.errorInsufficientLengthData(tag, 1));
         }
 
-        var length: number = buffer.readUInt8();
+        let length: number = buffer.readUInt8();
         // console.log('first length: ' + length);
         if ((length & TLV_LENGTH_ONE_BYTE_FLAG) !== TLV_LENGTH_ONE_BYTE_FLAG){
             // console.log('returning with one byte length: ' + length);
             return new TlvParserResult<number>(length, null);
         }
 
-        var bytesToRead: number = (length & TLV_LENGTH_ADDITIONAL_BYTES_FLAG);
+        const bytesToRead: number = (length & TLV_LENGTH_ADDITIONAL_BYTES_FLAG);
         if (bytesToRead > 4){
             return new TlvParserResult<number>(null, TlvParserParseError.errorLengthTooBig(tag, bytesToRead));
         }
@@ -195,11 +200,11 @@ export class TlvParser {
     static parseValue(buffer: OctetBuffer, length: number, tag: Buffer): TlvParserResult<Buffer> {
         if (buffer.remaining < length){
             //console.log('need ' + length + ', available '+ buffer.remaining);
-            var missing = length - buffer.remaining;
-            var partialValue: Buffer = buffer.readBufferRemaining();
+            const missing = length - buffer.remaining;
+            const partialValue: Buffer = buffer.readBufferRemaining();
             return new TlvParserResult<Buffer>(partialValue, TlvParserParseError.errorInsufficientValueData(tag, missing));
         }
-        var value: Buffer = buffer.readBuffer(length);
+        const value: Buffer = buffer.readBuffer(length);
         return new TlvParserResult<Buffer>(value, null);
     }
 
