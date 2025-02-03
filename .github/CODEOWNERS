@@ -1,9 +1,0 @@
-# CODEOWNERS
-
-# Repository Owners
-
-# Pod - Team
-*           @ikhokha/custodian-techops @ikhokha/meridian @ikhokha/custodian-seniors-payments
-
-# CICD - GitHub
-.github/   @ikhokha/custodian-techops

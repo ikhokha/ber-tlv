@@ -20,9 +20,9 @@ jobs:
               with:
                   node-version: '18.x'
 
-            - name: Copying config files
-              run: cp ./.npmrc ~/.npmrc
-              shell: bash
+            # - name: Copying config files
+            #   run: cp ./.npmrc ~/.npmrc
+            #   shell: bash
 
             - name: Install dependencies
               run: yarn install
