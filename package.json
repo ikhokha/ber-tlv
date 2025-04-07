@@ -1,6 +1,6 @@
 {
     "name": "@ikhokha/ber-tlv",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Simple TLV implementation, providing parsing and serialization of TLV encoded data",
     "author": "Simon Eumes <simon@sim0n.net>",
     "contributors": [

@@ -1,0 +1,37 @@
+name: Test Package Build
+
+on:
+    pull_request:
+        branches: [main]
+
+env:
+    GITHUB_PACKAGE_TOKEN: ${{ secrets.GHP_ACCESS_TOKEN}}
+    NPM_ACCESS_TOKEN: ${{ secrets.GHP_ACCESS_TOKEN }}
+
+jobs:
+    build-pkg:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Setup node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '18.x'
+
+            - name: Copying config files
+              run: cp ./.npmrc ~/.npmrc
+              shell: bash
+
+            - name: Install dependencies
+              run: yarn install
+
+            - name: Linting
+              run: yarn lint --format junit -o reports/junit/js-lint-results.xml
+
+            - name: Typechecking
+              run: yarn typecheck
+
+            - name: Dry-run publish package
+              run: npm publish --dry-run
